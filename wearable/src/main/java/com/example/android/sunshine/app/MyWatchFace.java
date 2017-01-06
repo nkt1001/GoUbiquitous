@@ -324,7 +324,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? R.dimen.am_pm_size_round : R.dimen.am_pm_size);
 
             mYOffset = resources.getDimension(mRound
-                    ? R.dimen.y_offset_round : R.dimen.y_offset);;
+                    ? R.dimen.y_offset_round : R.dimen.y_offset);
 
             mDatePaint.setTextSize(dateSize);
             mHighTempPaint.setTextSize(amPmSize);
@@ -402,13 +402,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(mIBackgroundColor);
             }
 
-            if (!mAmbient) {
 
-                if (mRound) {
-                    canvas.drawCircle(mCenterX, mCenterY, mCenterX, mBackgroundPaint);
-                } else {
-                    canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
-                }
+            if (mRound) {
+                canvas.drawCircle(mCenterX, mCenterY, mCenterX, mBackgroundPaint);
+            } else {
+                canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
 
