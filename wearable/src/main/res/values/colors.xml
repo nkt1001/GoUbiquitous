@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ambient_background">#000000</color>
+    <color name="background">#03A9F4</color>  <!-- 500 -->
+    <color name="text_color">#ffffff</color>
+    <color name="text_color_colon">#B3E5FC</color>
+    <color name="accent">#FFD740</color>
+
+</resources>
