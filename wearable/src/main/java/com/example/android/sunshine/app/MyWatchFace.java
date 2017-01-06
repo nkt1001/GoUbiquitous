@@ -45,8 +45,6 @@ import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
@@ -83,7 +81,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
     private static class EngineHandler extends Handler {
         private final WeakReference<MyWatchFace.Engine> mWeakReference;
 
-        public EngineHandler(MyWatchFace.Engine reference) {
+        EngineHandler(MyWatchFace.Engine reference) {
             mWeakReference = new WeakReference<>(reference);
         }
 
@@ -107,7 +105,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         private static final String WEARABLE_DATA_PATH = "/wearable_data";
 
-        private boolean mWeatherDataUpdated=false;
+//        private boolean mWeatherDataUpdated=false;
 
         private static final String COLON_STRING = ":";
         private boolean mRegisteredTimeZoneReceiver = false;
@@ -119,7 +117,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private Paint mDatePaint;
         private Paint mHourPaint;
         private Paint mMinutePaint;
-        private Paint mAmPmPaint;
         private Paint mColonPaint;
         private Paint mDividerPaint;
 
@@ -147,9 +144,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private int mABackgroundColor ;
         private int mITextColor ;
         private int mIColonColor ;
-
-        String mAmString;
-        String mPmString;
 
         private Bitmap mWeatherIconBitmap;
         private Bitmap mGrayWeatherIconBitmap;
@@ -185,9 +179,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     .setAcceptsTapEvents(true)
                     .build());
             Resources resources = MyWatchFace.this.getResources();
-            
-            mAmString = resources.getString(R.string.am);
-            mPmString = resources.getString(R.string.pm);
 
             mIBackgroundColor =resources.getColor(R.color.background) ;
             mABackgroundColor =resources.getColor(R.color.ambient_background) ;
@@ -200,11 +191,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mWeatherIconPaint = new Paint();
 
             mDatePaint = createTextPaint(mITextColor, NORMAL_TYPEFACE);
+            mDatePaint.setAlpha(180);
+
             mHighTempPaint = createTextPaint(mITextColor, BOLD_TYPEFACE);
 
             mHourPaint = createTextPaint(mITextColor, BOLD_TYPEFACE);
             mMinutePaint = createTextPaint(mITextColor, BOLD_TYPEFACE);
-            mAmPmPaint = createTextPaint(mITextColor, NORMAL_TYPEFACE);
             mColonPaint = createTextPaint(mIColonColor, NORMAL_TYPEFACE);
 
             mDividerPaint = new Paint();
@@ -320,18 +312,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? R.dimen.text_size_round : R.dimen.text_size);
             float dateSize = resources.getDimension(mRound
                     ? R.dimen.date_size_round : R.dimen.date_size);
-            float amPmSize = resources.getDimension(mRound
-                    ? R.dimen.am_pm_size_round : R.dimen.am_pm_size);
+            float highTempSize = resources.getDimension(mRound
+                    ? R.dimen.high_temp_size_round : R.dimen.high_temp_size);
 
             mYOffset = resources.getDimension(mRound
                     ? R.dimen.y_offset_round : R.dimen.y_offset);
 
             mDatePaint.setTextSize(dateSize);
-            mHighTempPaint.setTextSize(amPmSize);
+            mHighTempPaint.setTextSize(highTempSize);
             mHourPaint.setTextSize(textSize);
             mMinutePaint.setTextSize(textSize);
             mColonPaint.setTextSize(textSize);
-            mAmPmPaint.setTextSize(amPmSize);
 
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
@@ -361,7 +352,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     mDatePaint.setAntiAlias(antiAlias);
                     mHourPaint.setAntiAlias(antiAlias);
                     mMinutePaint.setAntiAlias(antiAlias);
-                    mAmPmPaint.setAntiAlias(antiAlias);
                     mColonPaint.setAntiAlias(antiAlias);
                 }
                 if(mAmbient){
@@ -414,34 +404,23 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mCalendar.setTimeInMillis(now);
             mDate.setTime(now);
 
-            // Show colons for the first half of each second so the colons blink on when the time
-            // updates.
             mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
 
 
-            // Draw the hours.
-            int hour = mCalendar.get(Calendar.HOUR);
-            if (hour == 0) {
-                hour = 12;
-            }
-            String hourString = String.valueOf(hour);
+            String hourString = formatTwoDigitNumber(mCalendar.get(Calendar.HOUR_OF_DAY));
             String minuteString = formatTwoDigitNumber(mCalendar.get(Calendar.MINUTE));
-            String ampmString = getAmPmString(mCalendar.get(Calendar.AM_PM));
 
             float hourTextLength = mHourPaint.measureText(hourString);
             float minuteTextLength = mMinutePaint.measureText(minuteString);
-            float ampmTextLength = mAmPmPaint.measureText(ampmString);
 
 
-            mXOffset = (bounds.width() - (hourTextLength + mColonWidth + minuteTextLength + ampmTextLength)) / 2;
+            mXOffset = (bounds.width() - (hourTextLength + mColonWidth + minuteTextLength)) / 2;
             float x = mXOffset;
 
             canvas.drawText(hourString, x, mYOffset, mHourPaint);
             x += mHourPaint.measureText(hourString);
 
 
-            // In ambient and mute modes, always draw the first colon. Otherwise, draw the
-            // first colon for the first half of each second.
             if (mAmbient || mShouldDrawColons) {
                 canvas.drawText(COLON_STRING, x, mYOffset - 5, mColonPaint);
             }
@@ -449,9 +428,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
 
             canvas.drawText(minuteString, x, mYOffset, mHourPaint);
-            x += mHourPaint.measureText(minuteString);
-
-            canvas.drawText(ampmString, x, mYOffset, mAmPmPaint);
 
             float y = getTextHeight(hourString, mHourPaint) + mYOffset - 20;
             String dayString = mDayOfWeekFormat.format(mDate);
@@ -498,12 +474,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
             return rect.height();
         }
 
-        private String getAmPmString(int amPm) {
-            return amPm == Calendar.AM ? mAmString : mPmString;
-        }
-
         private String formatTwoDigitNumber(int hour) {
-            return String.format("%02d", hour);
+            return String.format(Locale.getDefault(), "%02d", hour);
         }
 
         /**
@@ -562,7 +534,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 invalidate();
 
             }
-            mWeatherDataUpdated = true;
+//            mWeatherDataUpdated = true;
         }
 
         @Override  // GoogleApiClient.ConnectionCallbacks
@@ -589,34 +561,30 @@ public class MyWatchFace extends CanvasWatchFaceService {
             }
         }
 
-        class SendToDataLayerThread extends Thread {
-            String path;
-            DataMap dataMap;
-
-            // Constructor for sending data objects to the data layer
-            SendToDataLayerThread(String p, DataMap data) {
-                path = p;
-                dataMap = data;
-            }
-
-            public void run() {
-                // Construct a DataRequest and send over the data layer
-                PutDataMapRequest putDMR = PutDataMapRequest.create(path);
-                putDMR.getDataMap().putAll(dataMap);
-                PutDataRequest request = putDMR.asPutDataRequest();
-                DataApi.DataItemResult result = Wearable.DataApi.putDataItem(mGoogleApiClient, request).await();
-                if (result.getStatus().isSuccess()) {
-                    Log.d(TAG, "DataMap: " + dataMap + " sent successfully to data layer ");
-                } else {
-                    // Log an error
-                    Log.d(TAG, "ERROR: failed to send DataMap to data layer");
-                }
-            }
-        }
-
+//        class SendToDataLayerThread extends Thread {
+//            String path;
+//            DataMap dataMap;
+//
+//            // Constructor for sending data objects to the data layer
+//            SendToDataLayerThread(String p, DataMap data) {
+//                path = p;
+//                dataMap = data;
+//            }
+//
+//            public void run() {
+//                // Construct a DataRequest and send over the data layer
+//                PutDataMapRequest putDMR = PutDataMapRequest.create(path);
+//                putDMR.getDataMap().putAll(dataMap);
+//                PutDataRequest request = putDMR.asPutDataRequest();
+//                DataApi.DataItemResult result = Wearable.DataApi.putDataItem(mGoogleApiClient, request).await();
+//                if (result.getStatus().isSuccess()) {
+//                    Log.d(TAG, "DataMap: " + dataMap + " sent successfully to data layer ");
+//                } else {
+//                    // Log an error
+//                    Log.d(TAG, "ERROR: failed to send DataMap to data layer");
+//                }
+//            }
+//        }
+//
     }
-
-
-
-
 }
