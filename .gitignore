@@ -41,3 +41,5 @@ project.properties
 ##Gradle-based build
 .gradle
 build/
+
+/screenshots
